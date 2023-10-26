@@ -4,13 +4,15 @@ import * as elements from "typed-html"
 
 const app = new Elysia()
     .use(html())
-    .get("/", ({html}) => html(
+    .get("/", () =>
         <BaseHtml>
-            <button hx-get="/data" hx-swap="outerHTML">
-                Click Me
-            </button>
+            <div class="vw-100 vh-100 d-flex justify-content-center align-items-center">
+                <button class="btn btn-primary" hx-get="/data" hx-swap="outerHTML">
+                    Click Me
+                </button>
+            </div>
         </BaseHtml>
-    ))
+    )
     .get("/data", () => <h1>Clicked</h1>)
     .listen(3000)
 
@@ -24,6 +26,7 @@ const BaseHtml = ({ children }: elements.Children) => `
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Todo List</title>
     <script src="https://unpkg.com/htmx.org@1.9.3"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
 </head>
 <body>${children}</body>
 </html>
