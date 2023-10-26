@@ -14,6 +14,21 @@ const app = new Elysia()
         </BaseHtml>
     )
     .get("/todos", () => <TodoList todos={db}/>)
+    .post("/todos", ({body}) => {
+        if (!body.content.length)
+            throw new Error("Content cannot be empty")
+        const newTodo: Todo = {
+            id: lastId++,
+            content: body.content,
+            completed: false
+        }
+        db.push(newTodo)
+        return <TodoItem {...newTodo}/>
+    }, {
+        body: t.Object({
+            content: t.String()
+        })
+    })
     .post("/todos/toggle/:id", ({params}) => {
         const todo = db.find(todo => todo.id === params.id)
         if (todo) {
@@ -63,6 +78,7 @@ const db: Todo[] = [
     { id: 1, content: "Do the dishes", completed: true },
     { id: 2, content: "Study Mathematics", completed: false }
 ]
+let lastId = 2
 
 const TodoItem = ({id, content, completed}: Todo) => (
     <div class="flex flex-row space-x-3">
@@ -84,12 +100,19 @@ const TodoItem = ({id, content, completed}: Todo) => (
 )
 
 function TodoList({todos}: {todos: Todo[]}) {
-    if (!todos.length)
-        return <p>No Tasks!</p>
+    const content = todos.length
+        ? todos.map(todo => <TodoItem {...todo} />)
+        : ''
 
     return <div>
-        {todos.map(todo => (
-            <TodoItem {...todo} />
-        ))}
+        {content}
+        <TodoForm/>
     </div>
+}
+
+function TodoForm() {
+    return <form class="flex flex-row space-x-3" hx-post="/todos" hx-swap="beforebegin">
+        <input type="text" name="content" class="border border-black" />
+        <button type="submit">Add</button>
+    </form>
 }
