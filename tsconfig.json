@@ -13,6 +13,7 @@
     "skipLibCheck": true,
     "jsx": "react",
     "jsxFactory": "elements.createElement",
+    "jsxFragmentFactory": "Html.Fragment",
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
