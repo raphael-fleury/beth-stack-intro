@@ -1,33 +1,30 @@
 import * as elements from "typed-html"
 import type { Elysia } from 'elysia'
-import { t } from "elysia"
-import { Todo } from '../../models/Todo'
+import { NotFoundError, t } from "elysia"
 import { TodoItem } from '../../components/TodoItem'
 import { TodoList } from '../../components/TodoList'
-
-const db: Todo[] = [
-    { id: 1, content: "Do the dishes", completed: true },
-    { id: 2, content: "Study Mathematics", completed: false }
-]
-let lastId = 2
+import { db } from "../../db"
+import { Todo, todos } from "../../db/schema"
+import { eq } from "drizzle-orm"
 
 const justId =  t.Object({
     id: t.Numeric()
 })
 
 export default (app: Elysia) => app
-    .get("/", () => <TodoList todos={db}/>)
+    .get("/", async () => {
+        const data = await db.select().from(todos).all()
+        return <TodoList todos={data}/>
+    })
 
-    .post("/", ({body}) => {
+    .post("/", async ({body}) => {
         if (!body.content.length)
             throw new Error("Content cannot be empty")
-        const newTodo: Todo = {
-            id: lastId + 1,
-            content: body.content,
-            completed: false
-        }
-        db.push(newTodo)
-        lastId++
+
+        console.log(body)
+        const newTodo = await db.
+            insert(todos).values(body).returning().get()
+
         return <TodoItem {...newTodo}/>
     }, {
         body: t.Object({
@@ -35,17 +32,21 @@ export default (app: Elysia) => app
         })
     })
 
-    .post("/toggle/:id", ({params}) => {
-        const todo = db.find(todo => todo.id === params.id)
-        if (todo) {
-            todo.completed = !todo.completed
-            return <TodoItem {...todo} />
-        }
+    .post("/toggle/:id", async ({params}) => {
+        const oldTodo = await db
+            .select().from(todos)
+            .where(eq(todos.id, params.id)).get()
+
+        if (!oldTodo)
+            throw new NotFoundError()
+
+        const newTodo = await db
+            .update(todos).set({ completed: !oldTodo.completed})
+            .where(eq(todos.id, params.id)).returning().get()
+
+        return <TodoItem {...newTodo}/>
     }, { params: justId })
 
-    .delete("/:id", ({params}) => {
-        const todo = db.find(todo => todo.id === params.id)
-        if (todo) {
-            db.splice(db.indexOf(todo), 1)
-        }
+    .delete("/:id", async ({params}) => {
+        await db.delete(todos).where(eq(todos.id, params.id)).run()
     }, { params: justId })
